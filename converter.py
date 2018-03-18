@@ -6,6 +6,7 @@ import sys
 import signal
 import json
 from shutil import copyfile
+from collections import OrderedDict
 
 from daemonize import Daemonize
 from yattag import Doc
@@ -37,15 +38,17 @@ def main():
             if (os.path.isfile(input_file_path) and
                     os.stat(input_file_path).st_size > 0):
                 with open(input_file_path) as source:
-                    source_data = json.load(source)
+                    source_data = json.load(
+                        source, object_pairs_hook=OrderedDict)
                 doc, tag, text = Doc().tagtext()
                 for elem in source_data:
-                    if elem.get('title'):
-                        with tag('title'):
-                            text(elem.get('title'))
-                    if elem.get('body'):
-                        with tag('p'):
-                            text(elem.get('body'))
+                    for key in elem:
+                        if key == 'body':
+                            with tag('p'):
+                                text(elem[key])
+                        else:
+                            with tag(key):
+                                text(elem[key])
                 convert_time = get_date()
                 with open(
                         os.path.join(
