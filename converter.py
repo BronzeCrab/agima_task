@@ -26,6 +26,16 @@ INPUT_FILE_NAME = 'source.json'
 FOLDER_TO_LOOK_IN = '/home/austinnikov/projects/agima_task/converter'
 
 
+def gen_html_from_dict(adict, tag, text):
+    for key in adict:
+        if key == 'body':
+            with tag('p'):
+                text(adict[key])
+        else:
+            with tag(key):
+                text(adict[key])
+
+
 def main():
     log(logger, 'start')
     if not os.path.exists(FOLDER_TO_LOOK_IN):
@@ -40,15 +50,15 @@ def main():
                 with open(input_file_path) as source:
                     source_data = json.load(
                         source, object_pairs_hook=OrderedDict)
+                print(source_data)
                 doc, tag, text = Doc().tagtext()
-                for elem in source_data:
-                    for key in elem:
-                        if key == 'body':
-                            with tag('p'):
-                                text(elem[key])
-                        else:
-                            with tag(key):
-                                text(elem[key])
+                if type(source_data) is list:
+                    with tag('ul'):
+                        for elem in source_data:
+                            with tag('li'):
+                                gen_html_from_dict(elem, tag, text)
+                elif type(source_data) is OrderedDict:
+                    gen_html_from_dict(source_data, tag, text)
                 convert_time = get_date()
                 with open(
                         os.path.join(
@@ -59,6 +69,7 @@ def main():
                     input_file_path,
                     os.path.join(FOLDER_TO_LOOK_IN, convert_time + '_input'))
                 os.remove(input_file_path)
+                log(logger, 'Input file successfully converted')
         except Exception as e:
             log(logger, e)
 

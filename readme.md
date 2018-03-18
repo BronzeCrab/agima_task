@@ -1,6 +1,6 @@
 #### What is it:
 
-This is python based json-to-html converter.
+This is python based json-to-html converter daemon.
 
 #### Features:
 
@@ -9,7 +9,7 @@ This is python based json-to-html converter.
 
 #### How to install:
 
-`pip install -r requirements`
+`pip install -r requirements.txt`
 
 #### How to start and control:
 
@@ -30,3 +30,4 @@ log folder just by editing `log_file` variable.
 
 You can change name of input file by editing `INPUT_FILE_NAME` var.
 You can change directory to look in by editing `FOLDER_TO_LOOK_IN` var.
+Outputs to the `FOLDER_TO_LOOK_IN` dir.
