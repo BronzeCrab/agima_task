@@ -8,13 +8,16 @@ import json
 from shutil import copyfile
 from collections import OrderedDict
 import re
-
-from daemonize import Daemonize
+import platform
+try:
+    from daemonize import Daemonize
+except ImportError:
+    pass
 from yattag import Doc
 
 PID = "/tmp/converter.pid"
 # logger's settings
-log_file = "/tmp/converter.log"
+log_file = "C:\\Users\\a.ustinnikov\\test\\agima_task\\converter.log"
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 logger.propagate = False
@@ -24,7 +27,7 @@ logger.addHandler(fh)
 keep_fds = [fh.stream.fileno()]
 
 INPUT_FILE_NAME = 'source.json'
-FOLDER_TO_LOOK_IN = '/home/austinnikov/projects/agima_task/converter'
+FOLDER_TO_LOOK_IN = 'C:\\Users\\a.ustinnikov\\test\\agima_task\\converter'
 
 
 def gen_html_from_source_data(source_data, tag, text):
@@ -134,7 +137,7 @@ def main():
 
 
 def get_date():
-    return datetime.now().strftime('%Y.%m.%d-%H:%M:%s')
+    return datetime.now().strftime('%Y.%m.%d_%H.%M.%S')
 
 
 def log(logger, message):
@@ -156,35 +159,38 @@ def kill(pid_f, logger):
         log(logger, 'There is no pid_file, nothing to kill')
 
 
-parser = argparse.ArgumentParser()
-mutually_exclusive_group = parser.add_mutually_exclusive_group(
-        required=True)
+if platform.system() == 'Windows':
+    main()
+else:
+    parser = argparse.ArgumentParser()
+    mutually_exclusive_group = parser.add_mutually_exclusive_group(
+            required=True)
 
-mutually_exclusive_group.add_argument(
-    "-start", action="store_true")
-mutually_exclusive_group.add_argument(
-    "-stop", action="store_true")
-mutually_exclusive_group.add_argument(
-    "-status", action="store_true")
-args = vars(parser.parse_args())
+    mutually_exclusive_group.add_argument(
+        "-start", action="store_true")
+    mutually_exclusive_group.add_argument(
+        "-stop", action="store_true")
+    mutually_exclusive_group.add_argument(
+        "-status", action="store_true")
+    args = vars(parser.parse_args())
 
-if args.get('stop'):
+    if args.get('stop'):
+        kill(PID, logger)
+        sys.exit()
+
+    elif args.get('status'):
+        try:
+            with open(PID) as pid_file:
+                pid = pid_file.read()
+            os.kill(int(pid), 0)
+        except Exception as e:
+            log(logger, "Converter is stopped")
+        else:
+            log(logger, "Converter is running")
+        sys.exit()
+
+    # kill in order not to start several processes
     kill(PID, logger)
-    sys.exit()
 
-elif args.get('status'):
-    try:
-        with open(PID) as pid_file:
-            pid = pid_file.read()
-        os.kill(int(pid), 0)
-    except Exception as e:
-        log(logger, "Converter is stopped")
-    else:
-        log(logger, "Converter is running")
-    sys.exit()
-
-# kill in order not to start several processes
-kill(PID, logger)
-
-daemon = Daemonize(app="test_app", pid=PID, action=main, keep_fds=keep_fds)
-daemon.start()
+    daemon = Daemonize(app="test_app", pid=PID, action=main, keep_fds=keep_fds)
+    daemon.start()
