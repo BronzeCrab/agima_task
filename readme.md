@@ -12,7 +12,7 @@ This is python based json-to-html converter daemon.
 
 `pip install -r requirements.txt`
 
-#### How to start and control if you are on Deabian:
+#### How to start and control if you are on Debian:
 
 Next u can do:
 
