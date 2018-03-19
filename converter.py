@@ -7,6 +7,7 @@ import signal
 import json
 from shutil import copyfile
 from collections import OrderedDict
+import re
 
 from daemonize import Daemonize
 from yattag import Doc
@@ -27,28 +28,77 @@ FOLDER_TO_LOOK_IN = '/home/austinnikov/projects/agima_task/converter'
 
 
 def gen_html_from_source_data(source_data, tag, text):
+    log(logger, source_data)
     if type(source_data) is list:
         with tag('ul'):
             for elem in source_data:
                 with tag('li'):
-                    gen_html_from_dict(elem, tag, text)
+                    gen_html_from_obj(elem, tag, text)
+
     elif type(source_data) is OrderedDict:
-        gen_html_from_dict(source_data, tag, text)
+        gen_html_from_obj(source_data, tag, text)
 
 
-def gen_html_from_dict(adict, tag, text):
-    for key in adict:
-        if type(adict[key]) is list or type(adict[key]) is OrderedDict:
-            with tag(key):
-                gen_html_from_source_data(adict[key], tag, text)
-        # adict[key] is simple text
-        else:
-            if key == 'body':
-                with tag('p'):
-                    text(adict[key])
+def prepare_tag(tag_name):
+    cleaned_tag_name, tag_id, tag_classes = tag_name, None, None
+    id_regex = '#[-\w]+'
+    m = re.search(id_regex, tag_name)
+    if m:
+        tag_id = m.group(0).replace('#', '')
+        cleaned_tag_name = re.sub(id_regex, '', tag_name)
+    classes_regex = '\.[-\w]+'
+    m = re.findall(classes_regex, tag_name)
+    if m:
+        tag_classes = ''.join(m)
+        tag_classes = re.sub(' ', '', re.sub('\.', ' ', tag_classes), count=1)
+        cleaned_tag_name = re.sub(classes_regex, '', cleaned_tag_name)
+
+    return cleaned_tag_name, tag_id, tag_classes
+
+
+def switch_cases(
+        func, func_params, tag, cleaned_tag_name, tag_id, tag_classes):
+    if tag_id is None and tag_classes is None:
+        with tag(cleaned_tag_name):
+            func(*func_params)
+    elif tag_id is not None and tag_classes is None:
+        with tag(cleaned_tag_name, id=tag_id):
+            func(*func_params)
+    elif tag_id is None and tag_classes is not None:
+        with tag(cleaned_tag_name, klass=tag_classes):
+            func(*func_params)
+    else:
+        with tag(cleaned_tag_name, id=tag_id, klass=tag_classes):
+            func(*func_params)
+
+
+def gen_html_from_obj(obj, tag, text):
+    if type(obj) is OrderedDict:
+        for key in obj:
+            cleaned_tag_name, tag_id, tag_classes = prepare_tag(key)
+            if type(obj[key]) is list or type(obj[key]) is OrderedDict:
+                switch_cases(
+                    gen_html_from_source_data,
+                    (obj[key], tag, text),
+                    tag, cleaned_tag_name, tag_id, tag_classes)
+            # obj[key] is simple text
             else:
-                with tag(key):
-                    text(adict[key])
+                if cleaned_tag_name == 'body':
+                    switch_cases(
+                        text,
+                        (obj[key],),
+                        tag, 'p', tag_id, tag_classes)
+                else:
+                    switch_cases(
+                        text,
+                        (obj[key],),
+                        tag, cleaned_tag_name, tag_id, tag_classes)
+    elif type(obj) is str:
+        cleaned_tag_name, tag_id, tag_classes = prepare_tag(obj)
+        switch_cases(
+            text,
+            ('',),
+            tag, cleaned_tag_name, tag_id, tag_classes)
 
 
 def main():
@@ -79,7 +129,8 @@ def main():
                 os.remove(input_file_path)
                 log(logger, 'Input file successfully converted')
         except Exception as e:
-            log(logger, e)
+            log(logger, "Error, exiting: {0}".format(e))
+            sys.exit()
 
 
 def get_date():
