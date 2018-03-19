@@ -37,4 +37,4 @@ Daemon outputs to the same `FOLDER_TO_LOOK_IN` dir.
 
 #### How to start and control if you are on Windows:
 
-`python conveter.py`
+`python converter.py`
