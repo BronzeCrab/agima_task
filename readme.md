@@ -12,7 +12,7 @@ This is python based json-to-html converter daemon.
 
 `pip install -r requirements.txt`
 
-#### How to start and control:
+#### How to start and control if you are on Deabian:
 
 Next u can do:
 
@@ -34,3 +34,7 @@ You can change name of input file by editing `INPUT_FILE_NAME` var.
 You can change directory to look in by editing `FOLDER_TO_LOOK_IN` var.
 
 Daemon outputs to the same `FOLDER_TO_LOOK_IN` dir.
+
+#### How to start and control if you are on Windows:
+
+`python conveter.py`
